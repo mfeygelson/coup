@@ -17,5 +17,6 @@
         <SOURCES />
       </library>
     </orderEntry>
+    <orderEntry type="library" name="eclipse.jetty.websocket.javax.server" level="project" />
   </component>
 </module>

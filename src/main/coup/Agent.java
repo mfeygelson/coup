@@ -3,25 +3,26 @@ package coup;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Set;
+import java.util.concurrent.Future;
 
 public interface Agent {
-  ActionType chooseAction(Set<ActionType> possibleActions, Set<PlayerInformation> otherPlayers);
+  Future<ActionType> chooseAction(Set<ActionType> possibleActions, Set<PlayerInformation> otherPlayers);
 
-  String chooseTheftTarget(Set<PlayerInformation> players);
+  Future<String> chooseTheftTarget(Set<PlayerInformation> players);
 
-  String chooseAssassinationTarget(Set<PlayerInformation> players);
+  Future<String> chooseAssassinationTarget(Set<PlayerInformation> players);
 
-  String chooseCoupTarget(Set<PlayerInformation> players);
+  Future<String> chooseCoupTarget(Set<PlayerInformation> players);
 
-  boolean shouldChallenge(ChallengeableInformation challengeable);
+  Future<Boolean> shouldChallenge(ChallengeableInformation challengeable);
 
-  Influence revealInfluence(ChallengeableInformation action, Set<Influence> heldInfluences);
+  Future<Influence> revealInfluence(ChallengeableInformation action, Set<Influence> heldInfluences);
 
-  Influence chooseInfluenceToLose(Set<Influence> heldInfluences);
+  Future<Influence> chooseInfluenceToLose(Set<Influence> heldInfluences);
 
   void receivedCard(Influence influence);
 
-  Influence chooseCardToReturn();
+  Future<Influence> chooseCardToReturn();
 
-  @Nullable Influence blockAs(ChallengeableInformation declaration, Set<Influence> influences);
+  Future<@Nullable Influence> blockAs(ChallengeableInformation declaration, Set<Influence> influences);
 }

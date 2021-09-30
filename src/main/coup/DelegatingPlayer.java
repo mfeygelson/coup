@@ -5,6 +5,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
 import static coup.ActionType.COUP;
@@ -23,15 +24,20 @@ public class DelegatingPlayer implements Player {
 
   @Override
   public Declaration speak() {
-    return switch (chooseAction()) {
-      case INCOME -> new Income(this);
-      case FOREIGN_AID -> new ForeignAid(this, otherPlayers());
-      case TAX -> new Tax(thisPlayer());
-      case STEAL -> new Steal(thisPlayer(), findPlayer(agent.chooseTheftTarget(otherPlayersInformation())));
-      case ASSASSINATE -> new Assassinate(thisPlayer(), findPlayer(agent.chooseAssassinationTarget(otherPlayersInformation())));
-      case EXCHANGE -> new Exchange(thisPlayer());
-      case COUP -> new Coup(thisPlayer(), findPlayer(agent.chooseCoupTarget(otherPlayersInformation())));
-    };
+    try {
+      return switch (chooseAction()) {
+        case INCOME -> new Income(this);
+        case FOREIGN_AID -> new ForeignAid(this, otherPlayers());
+        case TAX -> new Tax(thisPlayer());
+        case STEAL -> new Steal(thisPlayer(), findPlayer(agent.chooseTheftTarget(otherPlayersInformation()).get()));
+        case ASSASSINATE -> new Assassinate(thisPlayer(), findPlayer(agent.chooseAssassinationTarget(otherPlayersInformation()).get()));
+        case EXCHANGE -> new Exchange(thisPlayer());
+        case COUP -> new Coup(thisPlayer(), findPlayer(agent.chooseCoupTarget(otherPlayersInformation()).get()));
+      };
+    } catch (ExecutionException | InterruptedException e) {
+      e.printStackTrace();
+      throw new RuntimeException(e);
+    }
   }
 
   private Set<PlayerInformation> otherPlayersInformation() {
@@ -50,7 +56,12 @@ public class DelegatingPlayer implements Player {
     if (isk() >= 10) {
       return COUP;
     }
-    return agent.chooseAction(possibleActions(), otherPlayersInformation());
+    try {
+      return agent.chooseAction(possibleActions(), otherPlayersInformation()).get();
+    } catch (InterruptedException | ExecutionException e) {
+      e.printStackTrace();
+      throw new RuntimeException(e);
+    }
   }
 
   @Override
@@ -86,7 +97,12 @@ public class DelegatingPlayer implements Player {
 
   @Override
   public boolean challenges(Challengeable challengeable) {
-    return agent.shouldChallenge(challengeable.information());
+    try {
+      return agent.shouldChallenge(challengeable.information()).get();
+    } catch (InterruptedException | ExecutionException e) {
+      e.printStackTrace();
+      throw new RuntimeException(e);
+    }
   }
 
   @Override
@@ -95,7 +111,13 @@ public class DelegatingPlayer implements Player {
     if (influences.size() == 1) {
       return cardWithInfluence(influences.get(0)).orElseThrow();
     }
-    var influenceToReveal = agent.revealInfluence(challengeable.information(), influences());
+    Influence influenceToReveal = null;
+    try {
+      influenceToReveal = agent.revealInfluence(challengeable.information(), influences()).get();
+    } catch (InterruptedException | ExecutionException e) {
+      e.printStackTrace();
+      throw new RuntimeException(e);
+    }
     return cardWithInfluence(influenceToReveal).orElseThrow();
   }
 
@@ -113,7 +135,13 @@ public class DelegatingPlayer implements Player {
 
   @Override
   public @Nullable Challengeable block(Declaration declaration) {
-    Influence blockAs = agent.blockAs(declaration.information(), declaration.whatCanBlock());
+    Influence blockAs = null;
+    try {
+      blockAs = agent.blockAs(declaration.information(), declaration.whatCanBlock()).get();
+    } catch (InterruptedException | ExecutionException e) {
+      e.printStackTrace();
+      throw new RuntimeException(e);
+    }
     if (blockAs != null) {
       return new Block(thisPlayer(), blockAs);
     }
@@ -127,7 +155,13 @@ public class DelegatingPlayer implements Player {
 
   @Override
   public void loseInfluence() {
-    var influence = agent.chooseInfluenceToLose(influences());
+    Influence influence = null;
+    try {
+      influence = agent.chooseInfluenceToLose(influences()).get();
+    } catch (InterruptedException | ExecutionException e) {
+      e.printStackTrace();
+      throw new RuntimeException(e);
+    }
     loseCard(cardWithInfluence(influence).orElseThrow());
   }
 
@@ -155,7 +189,13 @@ public class DelegatingPlayer implements Player {
 
   @Override
   public void returnCard() {
-    Influence influence = agent.chooseCardToReturn();
+    Influence influence = null;
+    try {
+      influence = agent.chooseCardToReturn().get();
+    } catch (InterruptedException | ExecutionException e) {
+      e.printStackTrace();
+      throw new RuntimeException(e);
+    }
     Card card = cardWithInfluence(influence).orElseThrow();
     board.removeCardFromPlayer(thisPlayer(), card);
     board.returnCardToDeck(card);
